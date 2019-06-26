@@ -9,6 +9,7 @@ import br.com.mytwitter.erros.MFPException;
 import br.com.mytwitter.erros.PDException;
 import br.com.mytwitter.erros.PEException;
 import br.com.mytwitter.erros.PIException;
+import br.com.mytwitter.erros.PJSException;
 import br.com.mytwitter.erros.SIException;
 import br.com.mytwitter.interfaces.IRepositorioUsuario;
 import br.com.mytwitter.interfaces.ITwitter;
@@ -43,15 +44,14 @@ public class MyTwitter implements ITwitter {
         Perfil user = repositorio.buscar(usuario);
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                user.setStatus(false);
-                repositorio.atualizar(user);
-            } catch (PDException e) {
-                System.out.println("Perfil com status inativo");
-            }
+            checkPerfilStatus(usuario);
+            user.setStatus(false);
+            repositorio.atualizar(user);
+
         } catch (PIException e) {
             System.out.println("Peril inexistente");
+        } catch (PDException e) {
+            System.out.println("Perfil com status inativo");
         }
     }
 
@@ -62,34 +62,32 @@ public class MyTwitter implements ITwitter {
 
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                try {
-                    checkMensagem(mensagem);
-                    //Codigo
-                    //Colocar o tweet na timeline do usuario
-                    t.setUsuario(usuario);
-                    t.setTweet(mensagem);
-                    user.addTweet(t);
+            checkPerfilStatus(usuario);
+            checkMensagem(mensagem);
 
-                    //Colocar tweet na timeline dos seus seguidores
-                    Vector<Perfil> s = user.getSeguidores();
-                    if (!s.isEmpty()) {
-                        for (Perfil s1 : s) {
-                            if (s1.isStatus()) {
-                                s1.addTweet(t);
-                            }
-                        }
+            //Codigo
+            //Colocar o tweet na timeline do usuario
+            t.setUsuario(usuario);
+            t.setTweet(mensagem);
+            user.addTweet(t);
+
+            //Colocar tweet na timeline dos seus seguidores
+            Vector<Perfil> s = user.getSeguidores();
+            if (!s.isEmpty()) {
+                for (Perfil s1 : s) {
+                    if (s1.isStatus()) {
+                        s1.addTweet(t);
                     }
-                    repositorio.atualizar(user); //realmente funciona!!
-                } catch (MFPException e) {
-                    System.out.println("A mensagem deve conter entre 1 a 140 caracteres");
                 }
-            } catch (PDException e) {
-                System.out.println("Perfil com status inativo");
             }
+            repositorio.atualizar(user); //realmente funciona!!
+
         } catch (PIException e) {
             System.out.println("Peril inexistente");
+        } catch (PDException e) {
+            System.out.println("Perfil com status inativo");
+        } catch (MFPException e) {
+            System.out.println("A mensagem deve conter entre 1 a 140 caracteres");
         }
     }
 
@@ -98,25 +96,25 @@ public class MyTwitter implements ITwitter {
         Perfil user = repositorio.buscar(usuario);
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                //Codigo
-                Vector<Tweet> t = new Vector<Tweet>();
-                Vector<Tweet> tu = new Vector<Tweet>();
-                t = user.getTimeline();
-                if (!t.isEmpty()) {
-                    for (Tweet t1 : t) {
-                        if (t1.getUsuario().equals(usuario)) {
-                            tu.add(t1);
-                        }
+            checkPerfilStatus(usuario);
+
+            //Codigo
+            Vector<Tweet> t = new Vector<Tweet>();
+            Vector<Tweet> tu = new Vector<Tweet>();
+            t = user.getTimeline();
+            if (!t.isEmpty()) {
+                for (Tweet t1 : t) {
+                    if (t1.getUsuario().equals(usuario)) {
+                        tu.add(t1);
                     }
                 }
-                return ((!tu.isEmpty()) ? tu : null);
-            } catch (PDException e) {
-                System.out.println("Perfil com status inativo");
             }
+            return ((!tu.isEmpty()) ? tu : null);
+
         } catch (PIException e) {
             System.out.println("Peril inexistente");
+        } catch (PDException e) {
+            System.out.println("Perfil com status inativo");
         }
         return null;
     }
@@ -126,17 +124,16 @@ public class MyTwitter implements ITwitter {
         Perfil user = repositorio.buscar(usuario);
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                //Codigo
-                Vector<Tweet> t = new Vector<Tweet>();
-                t = user.getTimeline();
-                return ((!t.isEmpty()) ? t : null);
-            } catch (PDException e) {
-                System.out.println("Perfil com status inativo");
-            }
+            checkPerfilStatus(usuario);
+            //Codigo
+            Vector<Tweet> t = new Vector<Tweet>();
+            t = user.getTimeline();
+            return ((!t.isEmpty()) ? t : null);
+
         } catch (PIException e) {
             System.out.println("Peril inexistente");
+        } catch (PDException e) {
+            System.out.println("Perfil com status inativo");
         }
         return null;
     }
@@ -150,26 +147,29 @@ public class MyTwitter implements ITwitter {
         try {
             checkPerfilIn(seguidor);
             checkPerfilIn(seguido);
-            try {
-                checkPerfilStatus(seguidor);
-                checkPerfilStatus(seguido);
-                //Checar nomes iguais
-                try {
-                    checkNomes(seguidor, seguido);
-                    //Codigo
-                    //Verificar se já segue
-                    so.addSeguidor(sr);
-                    sr.addSeguido(so);
-                    repositorio.atualizar(so);
-                    repositorio.atualizar(sr);
-                } catch (SIException e) {
-                    System.out.println("Seguidor não pode seguir ele mesmo");
-                }
-            } catch (PDException e) {
-                System.out.println("Perfil de seguidor ou seguido está inativo");
-            }
+
+            checkPerfilStatus(seguidor);
+            checkPerfilStatus(seguido);
+
+            //Checar nomes iguais
+            checkNomes(seguidor, seguido);
+
+            //Check se perfil seguidor já segue 
+            checkSeguido(sr, so);
+            //Codigo
+            //Verificar se já segue
+            so.addSeguidor(sr);
+            sr.addSeguido(so);
+            repositorio.atualizar(so);
+            repositorio.atualizar(sr);
         } catch (PIException e) {
             System.out.println("Perfil de seguidor ou seguido nao existe");
+        } catch (PDException e) {
+            System.out.println("Perfil de seguidor ou seguido está inativo");
+        } catch (SIException e) {
+            System.out.println("Seguidor não pode seguir ele mesmo");
+        } catch (PJSException e) {
+            System.out.println("Seguidor já segue o seguido - novo -----------");
         }
     }
 
@@ -179,47 +179,46 @@ public class MyTwitter implements ITwitter {
 
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                //Código
-                Vector<Perfil> s = user.getSeguidores();
-                int numSeg = 0;
-                for (Perfil s1 : s) {
-                    if (s1.isStatus()) {
-                        numSeg++;
-                    }
+            checkPerfilStatus(usuario);
+
+            //Código
+            Vector<Perfil> s = user.getSeguidores();
+            int numSeg = 0;
+            for (Perfil s1 : s) {
+                if (s1.isStatus()) {
+                    numSeg++;
                 }
-                return numSeg;
-            } catch (PDException e) {
-                System.out.println("Perfil está inativo");
             }
+            return numSeg;
+
         } catch (PIException e) {
             System.out.println("Perfil nao existe");
+        } catch (PDException e) {
+            System.out.println("Perfil está inativo");
         }
         return 0;
     }
-    
+
     public int numeroSeguidos(String usuario) {
         Perfil user = repositorio.buscar(usuario);
 
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                //Código
-                Vector<Perfil> s = user.getSeguidos();
-                int numSeg = 0;
-                for (Perfil s1 : s) {
-                    if (s1.isStatus()) {
-                        numSeg++;
-                    }
+            checkPerfilStatus(usuario);
+            //Código
+            Vector<Perfil> s = user.getSeguidos();
+            int numSeg = 0;
+            for (Perfil s1 : s) {
+                if (s1.isStatus()) {
+                    numSeg++;
                 }
-                return numSeg;
-            } catch (PDException e) {
-                System.out.println("Perfil está inativo");
             }
+            return numSeg;
+
         } catch (PIException e) {
             System.out.println("Perfil nao existe");
+        } catch (PDException e) {
+            System.out.println("Perfil está inativo");
         }
         return 0;
     }
@@ -230,27 +229,25 @@ public class MyTwitter implements ITwitter {
 
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                //Código
-                Vector<Perfil> p = user.getSeguidores();
-                Vector<Perfil> srs = new Vector<Perfil>();
+            checkPerfilStatus(usuario);
+            //Código
+            Vector<Perfil> p = user.getSeguidores();
+            Vector<Perfil> srs = new Vector<Perfil>();
 
-                if (!p.isEmpty()) {
-                    for (Perfil p1 : p) {
-                        if (p1.isStatus()) {
-                            srs.add(p1);
-                        }
+            if (!p.isEmpty()) {
+                for (Perfil p1 : p) {
+                    if (p1.isStatus()) {
+                        srs.add(p1);
                     }
-                    return ((!srs.isEmpty()) ? srs : null);
-                } else {
-                    return null;
                 }
-            } catch (PDException e) {
-                System.out.println("Perfil está inativo");
+                return ((!srs.isEmpty()) ? srs : null);
+            } else {
+                return null;
             }
         } catch (PIException e) {
             System.out.println("Perfil nao existe");
+        } catch (PDException e) {
+            System.out.println("Perfil está inativo");
         }
         return null;
     }
@@ -261,26 +258,25 @@ public class MyTwitter implements ITwitter {
 
         try {
             checkPerfilIn(usuario);
-            try {
-                checkPerfilStatus(usuario);
-                //Código
-                Vector<Perfil> p = user.getSeguidos();
-                Vector<Perfil> srs = new Vector<Perfil>();
+            checkPerfilStatus(usuario);
+            //Código
+            Vector<Perfil> p = user.getSeguidos();
+            Vector<Perfil> srs = new Vector<Perfil>();
 
-                if (!p.isEmpty()) {
-                    for (Perfil p1 : p) {
-                        if (p1.isStatus()) {
-                            srs.add(p1);
-                        }
+            if (!p.isEmpty()) {
+                for (Perfil p1 : p) {
+                    if (p1.isStatus()) {
+                        srs.add(p1);
                     }
-                    return ((!srs.isEmpty()) ? srs : null);
-                } else {
-                    return null;
                 }
-            } catch (PDException e) {
-                System.out.println("Perfil está inativo");
+                return ((!srs.isEmpty()) ? srs : null);
+            } else {
+                return null;
             }
+
         } catch (PIException e) {
+            System.out.println("Perfil está inativo");
+        } catch (PDException e) {
             System.out.println("Perfil está inativo");
         }
         return null;
@@ -314,6 +310,16 @@ public class MyTwitter implements ITwitter {
     private void checkNomes(String n1, String n2) throws SIException {
         if (n1.equals(n2)) {
             throw new SIException();
+        }
+    }
+
+    private void checkSeguido(Perfil sr, Perfil so) throws PJSException {
+        Vector<Perfil> soList;
+        soList = so.getSeguidores();
+        for (Perfil soList1 : soList) {
+            if (soList1.getUsuario().equals(sr.getUsuario())) {
+                throw new PJSException();
+            }
         }
     }
 }

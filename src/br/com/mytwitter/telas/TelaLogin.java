@@ -78,7 +78,11 @@ public class TelaLogin extends javax.swing.JFrame {
         twitter.seguir(p3.getUsuario(), p4.getUsuario());
         twitter.seguir(p3.getUsuario(), p5.getUsuario());
         twitter.seguir(p4.getUsuario(), p5.getUsuario());
+        
+        //Verificar se já está seguindo
+        twitter.seguir(p3.getUsuario(), p4.getUsuario());
 
+        
         //Lista de Seguidos
         Vector<Perfil> seguidos = new Vector<Perfil>();
         seguidos = twitter.seguidos("@rebeca");
